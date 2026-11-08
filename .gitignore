@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Compiled Java (Eclipse rebuilds these)
+bin/
+*.class
+
+# Word documents
+*.docx
+
+# Arduino / editor build output
+build/
+.vscode/
