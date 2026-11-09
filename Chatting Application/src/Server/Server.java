@@ -9,21 +9,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
-/**
- * BitChat server.
- *
- * It listens on port 6001, accepts every client that connects and starts one
- * ClientHandler thread for each of them. It also keeps the list of connected
- * clients and passes every message on to the other clients.
- *
- * The server is a console program (it has no window): run it first, then run
- * Client on each laptop.
- */
 public class Server {
-
     static final int PORT = 6001;
 
-    // Every connected user has one ClientHandler object in this list.
     private static final ArrayList<ClientHandler> clients = new ArrayList<ClientHandler>();
 
     public static void main(String[] args) {
@@ -33,33 +21,23 @@ public class Server {
             printAddresses();
             System.out.println("Waiting for clients...\n");
 
-            // Keep accepting clients for as long as the server runs.
             while (true) {
-                Socket socket = serverSocket.accept();      // waits until a client connects
+                Socket socket = serverSocket.accept();
 
                 ClientHandler handler = new ClientHandler(socket);
-                Thread thread = new Thread(handler);        // one thread for every client
+                Thread thread = new Thread(handler);
                 thread.start();
             }
         } catch (IOException e) {
-            // Most common reason: the port is already in use (server started twice).
             System.out.println("Server error: " + e.getMessage());
         }
     }
 
-    // ---------------------------------------------------------------------
-    // The methods below are 'synchronized' because many ClientHandler threads
-    // use the clients list at the same time. Only one thread may be inside
-    // any of them at a time, so the list is never changed while it is being
-    // read.
-    // ---------------------------------------------------------------------
-
-    /** Adds a new client to the list and returns the (unique) name it was given. */
     static synchronized String addClient(ClientHandler handler, String requestedName) {
         String name = cleanName(requestedName);
         String finalName = name;
         int n = 2;
-        while (isNameTaken(finalName)) {        // two "alice" -> "alice" and "alice2"
+        while (isNameTaken(finalName)) {
             finalName = name + n;
             n++;
         }
@@ -69,7 +47,6 @@ public class Server {
         return finalName;
     }
 
-    /** Removes a client. Returns true if it was really in the list. */
     static synchronized boolean removeClient(ClientHandler handler) {
         boolean removed = clients.remove(handler);
         if (removed) {
@@ -78,7 +55,6 @@ public class Server {
         return removed;
     }
 
-    /** Sends a message to every client except 'except' (pass null to send to all). */
     static synchronized void broadcast(String message, ClientHandler except) {
         for (ClientHandler c : clients) {
             if (c != except) {
@@ -87,7 +63,6 @@ public class Server {
         }
     }
 
-    /** Tells everybody who is online right now, e.g. "USERS|alice,bob,carol". */
     static synchronized void broadcastUserList() {
         StringBuilder names = new StringBuilder();
         for (ClientHandler c : clients) {
@@ -108,7 +83,6 @@ public class Server {
         return false;
     }
 
-    /** '|' and ',' are used by the message format, so they are not allowed in names. */
     private static String cleanName(String name) {
         String cleaned = name.trim().replace("|", "_").replace(",", "_");
         if (cleaned.length() > 20) {
@@ -120,7 +94,6 @@ public class Server {
         return cleaned;
     }
 
-    /** Prints this computer's addresses so you know what to type in the client. */
     private static void printAddresses() {
         System.out.println("Clients on other laptops should connect to one of these addresses:");
         try {

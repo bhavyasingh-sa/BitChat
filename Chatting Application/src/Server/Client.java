@@ -9,26 +9,13 @@ import java.util.Date;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-/**
- * BitChat client: the Swing chat window.
- *
- * When started it asks for a username and the server's IP address, connects
- * to the server, and then shows the chat. Typed messages are sent from the
- * Send button / Enter key (ActionListener); incoming messages are read on a
- * separate background thread so the window never freezes.
- */
 public class Client implements ActionListener {
-
     private static final int PORT = 6001;
-
-    // Profile picture in the header. Put your own picture in src/icons/ with this
-    // name (or change the name here). If the file is missing, no picture is shown.
-    private static final String PROFILE_PICTURE = "profile.png";
 
     private JFrame f = new JFrame();
     private JTextField text;
     private JButton send;
-    private JPanel a1;              // the chat area that holds all the bubbles
+    private JPanel a1;
     private JScrollPane scroll;
     private JLabel status;
 
@@ -37,29 +24,22 @@ public class Client implements ActionListener {
     private DataOutputStream dout;
     private volatile boolean connected = true;
 
-    // ---------------------------------------------------------------------
-    // Constructor: builds the whole chat window and starts listening
-    // ---------------------------------------------------------------------
     Client(String username, Socket socket) throws IOException {
         this.socket = socket;
         din = new DataInputStream(socket.getInputStream());
         dout = new DataOutputStream(socket.getOutputStream());
 
-        // The first thing the server expects is our username.
         dout.writeUTF(username);
         dout.flush();
 
-        //null means not using any preset layout
         f.setLayout(null);
 
-        //create a new panel for name (the green header)
         JPanel p1 = new JPanel();
         p1.setBackground(new Color(7, 94, 84));
         p1.setBounds(0, 0, 450, 70);
         p1.setLayout(null);
         f.add(p1);
 
-        // The window has no title bar, so the header can be dragged to move it.
         MouseAdapter dragger = new MouseAdapter() {
             private Point start;
 
@@ -77,7 +57,6 @@ public class Client implements ActionListener {
         p1.addMouseListener(dragger);
         p1.addMouseMotionListener(dragger);
 
-        //Back button: leaves the chat and closes the window
         JLabel back = new JLabel(loadIcon("previous.png", 25, 25));
         back.setBounds(5, 20, 25, 25);
         p1.add(back);
@@ -89,47 +68,34 @@ public class Client implements ActionListener {
             }
         });
 
-        //Profile Image
-        JLabel profile = new JLabel(loadIcon(PROFILE_PICTURE, 50, 50));
-        profile.setBounds(40, 10, 50, 50);
-        p1.add(profile);
-
-        //VideoCall Icon
         JLabel videoCall = new JLabel(loadIcon("video.png", 35, 30));
         videoCall.setBounds(300, 20, 35, 30);
         p1.add(videoCall);
 
-        //Phone Icon
         JLabel phone = new JLabel(loadIcon("call.png", 25, 25));
         phone.setBounds(360, 20, 35, 35);
         p1.add(phone);
 
-        //More Options
         JLabel more = new JLabel(loadIcon("menu.png", 10, 25));
         more.setBounds(420, 20, 10, 25);
         p1.add(more);
 
-        //Name of the chat
         JLabel name = new JLabel("BitChat");
         name.setBounds(110, 15, 200, 18);
         name.setForeground(Color.WHITE);
         name.setFont(new Font("SANS_SERIF", Font.BOLD, 18));
         p1.add(name);
 
-        //Status: how many people are online (updated when the server sends the list)
         status = new JLabel("Connected");
         status.setBounds(110, 35, 180, 18);
         status.setForeground(Color.WHITE);
         status.setFont(new Font("SANS_SERIF", Font.PLAIN, 13));
         p1.add(status);
 
-        //Chat Area: bubbles are stacked from top to bottom
         a1 = new JPanel();
         a1.setLayout(new BoxLayout(a1, BoxLayout.Y_AXIS));
         a1.setBackground(Color.WHITE);
 
-        // The wrapper keeps the bubbles at the top instead of stretching them
-        // to fill the whole window when there are only a few messages.
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(Color.WHITE);
         wrapper.add(a1, BorderLayout.PAGE_START);
@@ -141,29 +107,26 @@ public class Client implements ActionListener {
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         f.add(scroll);
 
-        //Text field area
         text = new JTextField();
         text.setBounds(5, 655, 310, 40);
         text.setFont(new Font("SANS_SERIF", Font.PLAIN, 16));
         f.add(text);
 
-        //Send Button
         send = new JButton("Send");
         send.setBounds(320, 655, 123, 40);
         send.setBackground(new Color(7, 94, 84));
         send.setForeground(Color.WHITE);
-        send.setOpaque(true);                   // without these two lines macOS ignores the
-        send.setBorderPainted(false);           // green background and the white text disappears
+        send.setOpaque(true);
+        send.setBorderPainted(false);
         send.setFont(new Font("SANS_SERIF", Font.PLAIN, 16));
         send.addActionListener(this);
         f.add(send);
 
-        //Enable Enter key send
         text.addActionListener(this);
 
         f.setSize(450, 700);
-        f.setLocationRelativeTo(null);          // centre of the screen ...
-        f.setLocation(f.getX(), 50);            // ... but near the top
+        f.setLocationRelativeTo(null);
+        f.setLocation(f.getX(), 50);
         f.getContentPane().setBackground(Color.WHITE);
         f.setUndecorated(true);
         f.setVisible(true);
@@ -171,7 +134,6 @@ public class Client implements ActionListener {
 
         addSystemMessage("Connected as " + username);
 
-        // Read incoming messages on a separate thread, so the window stays usable.
         Thread listener = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -182,11 +144,6 @@ public class Client implements ActionListener {
         listener.start();
     }
 
-    // ---------------------------------------------------------------------
-    // Sending
-    // ---------------------------------------------------------------------
-
-    //overriding the ActionListener Interface
     @Override
     public void actionPerformed(ActionEvent ae) {
         String out = text.getText().trim();
@@ -194,14 +151,13 @@ public class Client implements ActionListener {
             return;
         }
         if (out.length() > 1000) {
-            out = out.substring(0, 1000);       // keep messages a sensible size
+            out = out.substring(0, 1000);
         }
 
         try {
             dout.writeUTF(out);
             dout.flush();
 
-            // show our own message as a green bubble on the right
             addBubble(formatLabel(null, out), true);
             text.setText("");
         } catch (IOException e) {
@@ -209,16 +165,11 @@ public class Client implements ActionListener {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Receiving (runs on the background thread)
-    // ---------------------------------------------------------------------
     private void receiveMessages() {
         try {
             while (true) {
-                final String msg = din.readUTF();       // waits for the next message from the server
+                final String msg = din.readUTF();
 
-                // Swing components must only be changed on the Swing thread,
-                // so we hand the work over with invokeLater.
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
@@ -227,7 +178,7 @@ public class Client implements ActionListener {
                 });
             }
         } catch (IOException e) {
-            if (connected) {                            // not just us closing the window
+            if (connected) {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
@@ -238,9 +189,8 @@ public class Client implements ActionListener {
         }
     }
 
-    /** Works out what kind of message the server sent and shows it. */
     private void handleIncoming(String msg) {
-        String[] parts = msg.split("\\|", 3);       // e.g. "MSG|alice|hello" -> MSG, alice, hello
+        String[] parts = msg.split("\\|", 3);
 
         if (parts[0].equals("MSG") && parts.length == 3) {
             addBubble(formatLabel(parts[1], parts[2]), false);
@@ -254,20 +204,10 @@ public class Client implements ActionListener {
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Drawing the chat
-    // ---------------------------------------------------------------------
-
-    /**
-     * Builds one chat bubble with the time shown below it.
-     * sender == null means "my own message" (green); otherwise it is a
-     * received message (gray) with the sender's name in bold on top.
-     */
     public static JPanel formatLabel(String sender, String out) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        // Text is escaped so that something like <b> typed by a user shows up as text.
         String body = escapeHtml(out);
         if (sender != null) {
             body = "<b>" + escapeHtml(sender) + "</b><br>" + body;
@@ -276,9 +216,9 @@ public class Client implements ActionListener {
         JLabel output = new JLabel("<html><p style=\"width: 150px\">" + body + "</p></html>");
         output.setFont(new Font("Tahoma", Font.PLAIN, 16));
         if (sender == null) {
-            output.setBackground(new Color(37, 211, 102));      // green: sent by me
+            output.setBackground(new Color(37, 211, 102));
         } else {
-            output.setBackground(new Color(240, 240, 240));     // gray: received
+            output.setBackground(new Color(240, 240, 240));
         }
         output.setOpaque(true);
         output.setBorder(new EmptyBorder(15, 15, 15, 50));
@@ -292,7 +232,6 @@ public class Client implements ActionListener {
         return panel;
     }
 
-    /** Puts a bubble in the chat: on the right if it is mine, on the left otherwise. */
     private void addBubble(JPanel bubble, boolean mine) {
         JPanel row = new JPanel(new BorderLayout());
         row.setBackground(Color.WHITE);
@@ -300,7 +239,6 @@ public class Client implements ActionListener {
         addRow(row);
     }
 
-    /** A small centred line such as "bob joined the chat". */
     private void addSystemMessage(String message) {
         JLabel label = new JLabel("<html>" + escapeHtml(message) + "</html>", SwingConstants.CENTER);
         label.setFont(new Font("SANS_SERIF", Font.ITALIC, 12));
@@ -314,11 +252,10 @@ public class Client implements ActionListener {
 
     private void addRow(JPanel row) {
         a1.add(row);
-        a1.add(Box.createVerticalStrut(8));         // gap between messages
+        a1.add(Box.createVerticalStrut(8));
         a1.revalidate();
         a1.repaint();
 
-        // scroll down so the newest message is visible
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -344,7 +281,6 @@ public class Client implements ActionListener {
         try {
             socket.close();
         } catch (IOException e) {
-            // already closed
         }
     }
 
@@ -352,24 +288,20 @@ public class Client implements ActionListener {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
-    /** Loads an icon from the icons folder and scales it to the given size. */
     private static ImageIcon loadIcon(String file, int w, int h) {
         URL url = Client.class.getResource("/icons/" + file);
         ImageIcon raw;
         if (url != null) {
             raw = new ImageIcon(url);
         } else if (new File("src/icons/" + file).exists()) {
-            raw = new ImageIcon("src/icons/" + file);       // fallback if icons were not copied next to the classes
+            raw = new ImageIcon("src/icons/" + file);
         } else {
-            return new ImageIcon();                         // picture not found: show nothing instead of crashing
+            return new ImageIcon();
         }
         Image scaled = raw.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
         return new ImageIcon(scaled);
     }
 
-    // ---------------------------------------------------------------------
-    // Start-up: ask for username + server IP, connect, open the chat window
-    // ---------------------------------------------------------------------
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -384,7 +316,6 @@ public class Client implements ActionListener {
         String lastIp = "127.0.0.1";
 
         while (true) {
-            // Login box with two fields
             JTextField nameField = new JTextField(lastName, 15);
             JTextField ipField = new JTextField(lastIp, 15);
             JPanel form = new JPanel(new GridLayout(0, 1, 5, 5));
@@ -396,7 +327,7 @@ public class Client implements ActionListener {
             int choice = JOptionPane.showConfirmDialog(null, form, "BitChat - Join the chat",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if (choice != JOptionPane.OK_OPTION) {
-                System.exit(0);                     // user pressed Cancel
+                System.exit(0);
             }
 
             lastName = nameField.getText().trim();
@@ -404,9 +335,9 @@ public class Client implements ActionListener {
 
             try {
                 Socket s = new Socket();
-                s.connect(new InetSocketAddress(lastIp, PORT), 5000);   // give up after 5 seconds
+                s.connect(new InetSocketAddress(lastIp, PORT), 5000);
                 new Client(lastName, s);
-                return;                             // connected: the chat window is now open
+                return;
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(null,
                         "Could not connect to " + lastIp + ":" + PORT + "\n(" + e.getMessage() + ")\n\n"
