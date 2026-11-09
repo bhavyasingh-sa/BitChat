@@ -81,13 +81,13 @@ public class Client implements ActionListener {
         p1.add(more);
 
         JLabel name = new JLabel("BitChat");
-        name.setBounds(110, 15, 200, 18);
+        name.setBounds(45, 15, 200, 18);
         name.setForeground(Color.WHITE);
         name.setFont(new Font("SANS_SERIF", Font.BOLD, 18));
         p1.add(name);
 
         status = new JLabel("Connected");
-        status.setBounds(110, 35, 180, 18);
+        status.setBounds(45, 35, 180, 18);
         status.setForeground(Color.WHITE);
         status.setFont(new Font("SANS_SERIF", Font.PLAIN, 13));
         p1.add(status);
