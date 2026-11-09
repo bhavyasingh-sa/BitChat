@@ -57,8 +57,11 @@ public class Client implements ActionListener {
         p1.addMouseListener(dragger);
         p1.addMouseMotionListener(dragger);
 
-        JLabel back = new JLabel(loadIcon("previous.png", 25, 25));
-        back.setBounds(5, 20, 25, 25);
+        JLabel back = new JLabel("\u2190");
+        back.setBounds(5, 14, 32, 32);
+        back.setForeground(Color.WHITE);
+        back.setFont(new Font("SANS_SERIF", Font.BOLD, 26));
+        back.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         p1.add(back);
         back.addMouseListener(new MouseAdapter() {
             @Override
@@ -67,18 +70,6 @@ public class Client implements ActionListener {
                 System.exit(0);
             }
         });
-
-        JLabel videoCall = new JLabel(loadIcon("video.png", 35, 30));
-        videoCall.setBounds(300, 20, 35, 30);
-        p1.add(videoCall);
-
-        JLabel phone = new JLabel(loadIcon("call.png", 25, 25));
-        phone.setBounds(360, 20, 35, 35);
-        p1.add(phone);
-
-        JLabel more = new JLabel(loadIcon("menu.png", 10, 25));
-        more.setBounds(420, 20, 10, 25);
-        p1.add(more);
 
         JLabel name = new JLabel("BitChat");
         name.setBounds(45, 15, 200, 18);
@@ -286,20 +277,6 @@ public class Client implements ActionListener {
 
     private static String escapeHtml(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    private static ImageIcon loadIcon(String file, int w, int h) {
-        URL url = Client.class.getResource("/icons/" + file);
-        ImageIcon raw;
-        if (url != null) {
-            raw = new ImageIcon(url);
-        } else if (new File("src/icons/" + file).exists()) {
-            raw = new ImageIcon("src/icons/" + file);
-        } else {
-            return new ImageIcon();
-        }
-        Image scaled = raw.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH);
-        return new ImageIcon(scaled);
     }
 
     public static void main(String[] args) {

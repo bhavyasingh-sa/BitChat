@@ -22,7 +22,7 @@ Needs Java (JDK 11 or newer). Join all laptops to the same network: the **BitCha
 
 ```bash
 cd "Chatting Application"
-javac -d ~/bitchat_build src/Server/*.java && cp -R src/icons ~/bitchat_build/icons
+javac -d ~/bitchat_build src/Server/*.java
 ```
 
 Start the server on one laptop. It prints the addresses it can be reached on:

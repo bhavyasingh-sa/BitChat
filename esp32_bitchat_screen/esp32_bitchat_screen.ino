@@ -4,7 +4,8 @@
 const char* WIFI_NAME     = "BitChat";
 const char* WIFI_PASSWORD = "bitchat123";    
 const int   WIFI_CHANNEL  = 6;
-const int   MAX_USERS     = 8;              
+const int   MAX_USERS     = 8;
+const bool  AUTO_START_NETWORK = true;              
 const int  SCREEN_ROTATION     = 1;          
 const int  TOUCH_OFFSET_ROT    = 2;          
 const bool PANEL_INVERT_COLORS = false;      
@@ -91,52 +92,67 @@ bool wasTouched = false;
 bool wasBootDown = false;
 unsigned long lastToggle = 0;
 unsigned long lastPoll = 0;
-uint16_t COL_HEADER, COL_GREEN, COL_RED, COL_BG, COL_TEXT, COL_GRAY;
-const int BTN_X = 20, BTN_Y = 80, BTN_W = 170, BTN_H = 170;
+uint16_t COL_HEADER, COL_GREEN, COL_RED, COL_BG, COL_TEXT, COL_GRAY, COL_PANEL;
+const int BTN_X = 360, BTN_Y = 8, BTN_W = 110, BTN_H = 40;
+const int TOUCH_ZONE_X = 340, TOUCH_ZONE_Y = 60;
 void drawHeader() {
   lcd->fillRect(0, 0, 480, 56, COL_HEADER);
+  lcd->setTextSize(1);
   lcd->setTextColor(TFT_WHITE, COL_HEADER);
   lcd->setFont(&fonts::FreeSansBold18pt7b);
   lcd->setTextDatum(middle_left);
   lcd->drawString("BitChat Network", 16, 28);
-}
-void drawButton() {
   uint16_t color = networkOn ? COL_RED : COL_GREEN;
-  lcd->fillRoundRect(BTN_X, BTN_Y, BTN_W, BTN_H, 24, color);
+  lcd->fillRoundRect(BTN_X, BTN_Y, BTN_W, BTN_H, 10, color);
   lcd->setTextColor(TFT_WHITE, color);
-  lcd->setFont(&fonts::FreeSansBold24pt7b);
+  lcd->setFont(&fonts::FreeSansBold12pt7b);
   lcd->setTextDatum(middle_center);
-  lcd->drawString(networkOn ? "STOP" : "START", BTN_X + BTN_W / 2, BTN_Y + BTN_H / 2);
+  lcd->drawString(networkOn ? "Stop" : "Start", BTN_X + BTN_W / 2, BTN_Y + BTN_H / 2);
+}
+void drawCount() {
+  const int x = 280, y = 70, w = 190, h = 200;
+  lcd->fillRoundRect(x, y, w, h, 16, COL_PANEL);
+  lcd->setTextDatum(middle_center);
+  lcd->setTextColor(COL_HEADER, COL_PANEL);
+  lcd->setFont(&fonts::FreeSansBold24pt7b);
+  lcd->setTextSize(2.5);
+  lcd->drawString(String(WiFi.softAPgetStationNum()), x + w / 2, y + 85);
+  lcd->setTextSize(1);
+  lcd->setFont(&fonts::FreeSans12pt7b);
+  lcd->setTextColor(COL_GRAY, COL_PANEL);
+  lcd->drawString("devices connected", x + w / 2, y + 170);
 }
 void drawInfo() {
-  const int x = 215;
-  lcd->fillRect(x - 5, 62, 480 - x + 5, 258, COL_BG);
-  lcd->setTextDatum(top_left);
-  lcd->setTextColor(COL_TEXT, COL_BG);
+  lcd->fillRect(0, 60, 480, 224, COL_BG);
+  lcd->setTextSize(1);
   if (!networkOn) {
-    lcd->setFont(&fonts::FreeSansBold18pt7b);
-    lcd->drawString("Network is OFF", x, 100);
+    lcd->setTextDatum(middle_center);
+    lcd->setTextColor(COL_TEXT, COL_BG);
+    lcd->setFont(&fonts::FreeSansBold24pt7b);
+    lcd->drawString("Network is OFF", 240, 135);
     lcd->setFont(&fonts::FreeSans12pt7b);
     lcd->setTextColor(COL_GRAY, COL_BG);
-    lcd->drawString("Tap START to turn", x, 150);
-    lcd->drawString("on the BitChat Wi-Fi", x, 180);
+    lcd->drawString("Tap Start in the top corner", 240, 195);
+    lcd->drawString("or press the BOOT button", 240, 225);
     return;
   }
+  const int x = 20;
+  lcd->setTextDatum(top_left);
   lcd->setFont(&fonts::FreeSans12pt7b);
   lcd->setTextColor(COL_GRAY, COL_BG);
   lcd->drawString("Wi-Fi name", x, 70);
-  lcd->drawString("Password", x, 125);
-  lcd->drawString("Server address", x, 180);
-  lcd->drawString("Devices", x, 235);
-  lcd->setFont(&fonts::FreeSansBold12pt7b);
+  lcd->drawString("Password", x, 130);
+  lcd->drawString("Server address", x, 190);
+  lcd->setFont(&fonts::FreeSansBold18pt7b);
   lcd->setTextColor(COL_TEXT, COL_BG);
   lcd->drawString(WIFI_NAME, x, 92);
-  lcd->drawString(WIFI_PASSWORD, x, 147);
-  lcd->drawString(WiFi.softAPIP().toString(), x, 202);
-  lcd->drawString(String(WiFi.softAPgetStationNum()) + " connected", x, 257);
+  lcd->drawString(WIFI_PASSWORD, x, 152);
+  lcd->drawString(WiFi.softAPIP().toString(), x, 212);
+  drawCount();
 }
 void drawHint() {
   lcd->fillRect(0, 285, 480, 35, COL_BG);
+  lcd->setTextSize(1);
   lcd->setFont(&fonts::FreeSans9pt7b);
   lcd->setTextColor(COL_GRAY, COL_BG);
   lcd->setTextDatum(middle_left);
@@ -145,7 +161,6 @@ void drawHint() {
 void drawAll() {
   lcd->fillScreen(COL_BG);
   drawHeader();
-  drawButton();
   drawInfo();
   drawHint();
 }
@@ -169,7 +184,7 @@ void toggleNetwork() {
   lastToggle = millis();
   if (networkOn) stopNetwork(); else startNetwork();
   shownCount = -1;
-  drawButton();
+  drawHeader();
   drawInfo();
 }
 void setup() {
@@ -188,14 +203,21 @@ void setup() {
   COL_BG     = lcd->color565(255, 255, 255);
   COL_TEXT   = lcd->color565(20, 20, 20);
   COL_GRAY   = lcd->color565(110, 110, 110);
+  COL_PANEL  = lcd->color565(228, 245, 236);
   drawAll();
+  if (AUTO_START_NETWORK) {
+    startNetwork();
+    shownCount = -1;
+    drawHeader();
+    drawInfo();
+  }
 }
 void loop() {
   int32_t tx, ty;
   bool touched = lcd->getTouch(&tx, &ty);
   if (touched && !wasTouched) {
     Serial.printf("Touch at x=%d y=%d\n", (int)tx, (int)ty);
-    if (tx >= BTN_X && tx <= BTN_X + BTN_W && ty >= BTN_Y && ty <= BTN_Y + BTN_H) {
+    if (tx >= TOUCH_ZONE_X && ty <= TOUCH_ZONE_Y) {
       toggleNetwork();
     }
   }
@@ -208,7 +230,7 @@ void loop() {
     int count = WiFi.softAPgetStationNum();
     if (count != shownCount) {
       shownCount = count;
-      drawInfo();
+      drawCount();
       Serial.printf("Devices connected: %d\n", count);
     }
   }
